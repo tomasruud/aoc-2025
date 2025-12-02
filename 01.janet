@@ -41,7 +41,7 @@ L82
           0 [(+ zeros 1) next-pos]
           [zeros next-pos]))
       [0 start-pos])
-    0))
+    first))
 
 (test (solve-1 test-input) 3)
 
@@ -65,7 +65,7 @@ L82
 
         [(+ zeros zero-clicks) next-pos])
       [0 start-pos])
-    0))
+    first))
 
 (test (solve-2 test-input) 6)
 
