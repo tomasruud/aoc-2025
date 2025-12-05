@@ -29,12 +29,9 @@
         "2121212124"])
 
 (defn invalid-id? [id]
-  (def half (/ (length id) 2))
-  (if (int? half)
-    (=
-      (slice id 0 half)
-      (slice id half))
-    false))
+  (and
+    (>= (length id) 2)
+    (= ;(partition (math/ceil (/ (length id) 2)) id))))
 
 (test (invalid-id? "10") false)
 (test (invalid-id? "11") true)
@@ -54,19 +51,11 @@
 (test (solve-1 test-input) 1227775554)
 
 (defn invalid-id-strict? [id]
-  (def n (length id))
-  (cond
-    (< n 2) false
-    (= ;(string/bytes id)) true
-    (< n 4) false
+  (and
+    (>= (length id) 2)
     (->>
-      (range 2 (+ (/ n 2) 1))
-      (filter |(zero? (% n $)))
-      (map
-        (fn [i]
-          (=
-            (slice id 0 i)
-            ;(map |(slice id $ (+ $ i)) (range i n i)))))
+      (range 0 (math/ceil (/ (length id) 2)))
+      (map |(= ;(partition (+ $ 1) id)))
       any?)))
 
 (test (invalid-id-strict? "10") false)

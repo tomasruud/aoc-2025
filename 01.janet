@@ -50,7 +50,7 @@ L82
     (parse input)
     (reduce
       (fn [[zeros pos] move]
-        (def full-rotations (math/floor (math/abs (/ move dial-size))))
+        (def full-rotations (div (math/abs move) dial-size))
         (def short-move (% move dial-size))
 
         (def dist (+ pos short-move))
