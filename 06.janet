@@ -48,25 +48,41 @@
 (test (solve-1 test-input) 4277556)
 
 (defn parse-2 [input]
-  (->>
+  (defn parse
+    "Parse individual tokens and group them by line"
+    [input]
     (peg/match
       '{:main (some (* (group :line) (any "\n")))
         :line (some (+ (/ " " nil) (<- (+ :d "*" "+"))))}
-      input)
+      input))
 
+  (defn stringify
+    "Stringifies tokens to one string"
+    [tokens]
+    (->>
+      (map |(filter string? $) tokens)
+      (map string/join)
+      (|(string/join $ " "))))
+
+  (defn tokenize
+    "Tokenizes string and groups expressions"
+    [str]
+    (->>
+      str
+      (peg/match
+        ~{:main (some (group :exp))
+          :exp (* :op :space (some (* :number :space)))
+          :number (cmt (cmt (<- :d+) ,reverse) ,scan-number)
+          :op (+ (/ "*" *) (/ "+" +))
+          :space (any " ")})
+      (map slice)))
+
+  (->>
+    input
+    parse
     rotate90
-
-    (map |(filter string? $))
-    (map string/join)
-    (|(string/join $ " "))
-
-    (peg/match
-      ~{:main (some (group :exp))
-        :exp (* :op :space (some (* :number :space)))
-        :number (cmt (cmt (<- :d+) ,reverse) ,scan-number)
-        :op (+ (/ "*" *) (/ "+" +))
-        :space (any " ")})
-    (map slice)))
+    stringify
+    tokenize))
 
 (test (parse-2 test-input)
       @[[* 1 24 356]
