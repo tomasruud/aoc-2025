@@ -39,7 +39,12 @@
         @[3 5 7 9 11 15]])
 
 (defn splits [[start & splitters]]
-  [])
+  (if (empty? splitters)
+    [start]
+    # look for splitters on same axis
+    # on splitter, call splits again
+    # collect results and scrap duplicates
+    []))
 
 (defn solve-1 [input]
   (->>
