@@ -38,19 +38,24 @@
         @[4 8 14]
         @[3 5 7 9 11 15]])
 
-(defn splits [[start & splitters]]
-  (if (empty? splitters)
-    [start]
-    # look for splitters on same axis
-    # on splitter, call splits again
-    # collect results and scrap duplicates
-    []))
+(defn splits [[[start] & splitters] &opt depth]
+  (default depth 0)
+  (if-let
+    [_ (not (empty? splitters))
+     y (find-index |(has-value? $ start) splitters)
+     s (slice splitters (+ 1 y))
+     l (splits [[(- start 1)] ;s] (+ 1 depth y))
+     r (splits [[(+ start 1)] ;s] (+ 1 depth y))]
+    (merge l r)
+    {{:x start :y depth} :split}))
+
+(test (splits (parse test-input)) nil)
 
 (defn solve-1 [input]
   (->>
     (parse input)
     splits
-    flatten
+    keys
     length))
 
 (test (solve-1 test-input) 21)
