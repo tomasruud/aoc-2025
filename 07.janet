@@ -69,13 +69,36 @@
 
 (test (solve-1 test-input) 21)
 
+(defn count-timelines [[beams splitter & next-splitters]]
+  (def splitted-beams
+    (->>
+      beams
+      (reduce
+        (fn [beams [beam n]]
+          (if-let [_ (find |(= beam $) splitter)
+                   l (- beam 1)
+                   r (+ beam 1)]
+            (as->
+              beams _
+              (put _ l (+ n (get _ l 0)))
+              (put _ r (+ n (get _ r 0))))
+            (put beams beam (+ n (get beams beam 0)))))
+        @{})
+      pairs
+      sorted))
+
+  (if (empty? next-splitters)
+    (sum (map last splitted-beams))
+    (count-timelines [splitted-beams ;next-splitters])))
+
 (defn solve-2 [input]
-  0)
+  (def [[start] & splitters] (parse input))
+  (count-timelines [[[start 1]] ;splitters]))
 
 (test (solve-2 test-input) 40)
 
 (defn main [&]
   (->>
     (file/read stdin :all)
-    (|{:p1 (solve-1 $)})
+    (|{:p1 (solve-1 $) :p2 (solve-2 $)})
     pp))
