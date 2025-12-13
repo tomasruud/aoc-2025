@@ -37,51 +37,42 @@
         @[4 8 14]
         @[3 5 7 9 11 15]])
 
-(defn find-splits [[initial-beams & splitters-lines]]
-  (->>
-    (reduce
-      (fn [[current-beams splits] splitters]
-        (def [next-beams next-splits]
-          (reduce
-            (fn [[beams splits] beam]
-              (if-let [split (find |(= beam $) splitters)]
-                [[;beams (- split 1) (+ split 1)] [;splits split]]
-                [[;beams beam] splits]))
-            [[] []]
-            current-beams))
-        [(->>
-                               next-beams
-                               (map |[$ :value])
-                               from-pairs
-                               keys
-                               sorted) [;splits (->>
-                               next-splits
-                               (map |[$ :value])
-                               from-pairs
-                               keys
-                               sorted)]])
-      [initial-beams []]
-      splitters-lines)
-    last))
+(defn unique [values]
+  (reduce
+    (fn [acc v]
+      (if (= v (last acc))
+        acc
+        [;acc v]))
+    []
+    (sorted values)))
 
-(test (find-splits (parse test-input))
-      [@[9]
-       @[8 10]
-       @[7 9 11]
-       @[6 8 12]
-       @[5 7 11 13]
-       @[4 8 14]
-       @[3 5 7 9 15]])
+(test (unique [3 2 2 3 1 3 2 1]) [1 2 3])
+
+(defn count-splits [[beams splitter & next-splitters] &opt splits]
+  (default splits 0)
+
+  (def [splitted-beams total-splits]
+    (reduce
+      (fn [[beams splits] beam]
+        (if-let [split (find |(= beam $) splitter)]
+          [[;beams (- split 1) (+ split 1)] (+ splits 1)]
+          [[;beams beam] splits]))
+      [[] splits]
+      beams))
+
+  (if (empty? next-splitters)
+    total-splits
+    (count-splits [(unique splitted-beams) ;next-splitters] total-splits)))
 
 (defn solve-1 [input]
-  (->>
-    input
-    parse
-    find-splits
-    (map length)
-    sum))
+  (count-splits (parse input)))
 
 (test (solve-1 test-input) 21)
+
+(defn solve-2 [input]
+  0)
+
+(test (solve-2 test-input) 40)
 
 (defn main [&]
   (->>
