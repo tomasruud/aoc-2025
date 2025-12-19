@@ -72,15 +72,14 @@
     (map |(map slice $))
     (reduce
       (fn [circuits [a b]]
-        (match [(find-index |(has-key? $ a) circuits)
-                (find-index |(has-key? $ b) circuits)]
-          [nil nil] (array/push circuits @{a :set b :set})
-          [ia nil] (array/insert circuits ia (put (ia circuits) b :set))
-          [nil ib] (array/insert circuits ib (put (ib circuits) a :set))
-          [ia ib] (array/remove (array/insert circuits ia (merge (ia circuits) (ib circuits)) ib))))
+        (let [ia (find-index |(has-key? $ a) circuits)
+              ib (find-index |(has-key? $ b) circuits)]
+          (cond
+            (and (int? ia) (nil? ib)) (array/insert circuits ia (put (ia circuits) b :set))
+            (and (nil? ia) (int? ib)) (array/insert circuits ib (put (ib circuits) a :set))
+            (and (int? ia) (int? ib)) (array/remove (array/insert circuits ia (merge (ia circuits) (ib circuits))) ib)
+            (array/push circuits @{a :set b :set}))))
       @[])
-    pp
-    (map length)
     sorted
     reverse))
 
