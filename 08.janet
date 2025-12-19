@@ -30,52 +30,72 @@
       :pos (number :d+)}
     input))
 
-(defn euclidean-distance [[ax ay az] [bx by bz]]
+(defn distance [[ax ay az] [bx by bz]]
   (->>
-    [(- ax bx) (- ay by) (- az bz)]
-    (map |(math/pow $ 2))
+    @[(- ax bx) (- ay by) (- az bz)]
+    (map |(* $ $))
     sum
     math/sqrt))
 
-(test (euclidean-distance [1 2 3] [4 6 8]) 7.0710678118654755)
+(test (distance [1 2 3] [4 6 8]) 7.0710678118654755)
 
-(defn find-closest [idx junctions]
-  (def junction (idx junctions))
-  (->>
-    (pairs junctions)
+(defn find-distances [[point & other-points] &opt distances]
+  (default distances (array/new 1_000_000))
+
+  (def next-distances
     (reduce
-      (fn [[min-i min-dist] [i other]]
-        (def dist (euclidean-distance junction other))
-        (cond
-          (= junction other) [min-i min-dist]
-          (nil? min-i) [i dist]
-          (< dist min-dist) [i dist]
-          [min-i min-dist]))
-      [nil nil])
-    first))
+      (fn [acc other-point]
+        (array/push acc [[point other-point] (distance point other-point)]))
+      distances
+      other-points))
 
-(test (find-closest 0 (parse test-input)) 19)
+  (if (empty? other-points)
+    next-distances
+    (find-distances other-points next-distances)))
 
-(defn find-circuits [junctions]
+(defn shortest-connections [points num-connections]
   (->>
-    junctions
-    pairs
+    (find-distances points)
+    (sorted-by last)
+    (|(slice $ 0 (min num-connections (length $))))
+    (map first)))
+
+(test (shortest-connections (parse test-input) 4)
+      @[[@[162 817 812] @[425 690 689]]
+        [@[162 817 812] @[431 825 988]]
+        [@[906 360 560] @[805 96 715]]
+        [@[431 825 988] @[425 690 689]]])
+
+(defn circuit-sizes [points num-connections]
+  (->>
+    (shortest-connections points num-connections)
+    (map |(map slice $))
     (reduce
-      (fn [circuits [idx junction]]
-        circuits)
-      [])
-    (map keys)))
-
-(test (find-circuits (parse test-input)) nil)
-
-(defn solve-1 [input]
-  (->>
-    (parse input)
-    find-circuits
+      (fn [circuits [a b]]
+        (match [(find-index |(has-key? $ a) circuits)
+                (find-index |(has-key? $ b) circuits)]
+          [nil nil] (array/push circuits @{a :set b :set})
+          [ia nil] (array/insert circuits ia (put (ia circuits) b :set))
+          [nil ib] (array/insert circuits ib (put (ib circuits) a :set))
+          [ia ib] (array/remove (array/insert circuits ia (merge (ia circuits) (ib circuits)) ib))))
+      @[])
+    pp
     (map length)
     sorted
-    reverse
-    (slice 0 3)
-    *))
+    reverse))
 
-(test (solve-1 test-input) 40)
+(test (circuit-sizes (parse test-input) 10) @[4 3 2 2 1 1 1 1 1 1 1])
+
+(defn solve-1 [input num-connections]
+  (->>
+    (parse input)
+    (|(circuit-sizes $ num-connections))
+    (|(slice $ 0 3))
+    sum))
+
+(test (solve-1 test-input 10) 40)
+
+(defn main [&]
+  (->>
+    (file/read stdin :all)
+    (|{:p1 (solve-1 $ 1000)})))
