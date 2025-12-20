@@ -36,8 +36,8 @@
   (->>
     @[(- ax bx) (- ay by) (- az bz)]
     (map |(* $ $))
-    sum
-    math/sqrt))
+    (sum)
+    (math/sqrt)))
 
 (test (distance [1 2 3] [4 6 8]) 7.0710678118654755)
 
@@ -54,7 +54,7 @@
 (defn connections-by-distance [points]
   (->>
     (all-distances points)
-    sort
+    (sort)
     (map last)))
 
 (test (take 4 (connections-by-distance (parse test-input)))
@@ -78,14 +78,11 @@
     next-circuits
     (connect next-circuits connections)))
 
-(defn connect-points [points connections]
-  (connect (map |@{$ :set} points) connections))
-
 (defn circuits-by-size [num-connections points]
   (->>
     (connections-by-distance points)
     (take num-connections)
-    (connect-points points)
+    (connect (map |@{$ :set} points))
     (map length)
     (sort-by -)))
 
@@ -96,21 +93,44 @@
     (parse input)
     (circuits-by-size num-connections)
     (take 3)
-    product))
+    (product)))
 
 (test (solve-1 10 test-input) 40)
+
+(defn connect-all [circuits [[a b] & connections]]
+  (var next-circuits circuits)
+
+  (def ia (find-index |(has-key? $ a) circuits))
+  (def ib (find-index |(has-key? $ b) circuits))
+
+  (unless (= ia ib)
+    (def merged (merge (circuits ia) (circuits ib)))
+    (put next-circuits ia merged)
+    (set next-circuits (array/remove next-circuits ib)))
+
+  (if (= 1 (length next-circuits))
+    [a b]
+    (connect-all next-circuits connections)))
+
+(defn final-connection-point [points]
+  (->>
+    (connections-by-distance points)
+    (connect-all (map |@{$ :set} points))))
+
+(test (final-connection-point (parse test-input)) [[216 146 977] [117 168 530]])
 
 (defn solve-2 [input]
   (->>
     (parse input)
-    (circuits-by-size 2)
-    (take 3)
-    product))
+    (final-connection-point)
+    (map first)
+    (flatten)
+    (product)))
 
 (test (solve-2 test-input) 25272)
 
 (defn main [&]
   (->>
     (file/read stdin :all)
-    (|{:p1 (solve-1 1000 $)})
-    pp))
+    (|{:p1 (solve-1 1000 $) :p2 (solve-2 $)})
+    (pp)))
