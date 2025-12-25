@@ -6,22 +6,29 @@
 [.###.#] (0,1,2,3,4) (0,3,4) (0,1,2,4,5) (1,2) {10,11,11,5,10,5}
 ```)
 
-(defn parse-config [lights buttons _]
-  (def lights-as-decimal
+(defn translate-config [lights buttons _]
+  (def lights-decimal
     (reduce
-      (fn [n [i state]]
-        (pp [lights i state n])
-        (bor n (blshift state n)))
+      (fn [acc [i state]]
+        (bor acc (blshift state i)))
       0
-      (pairs (reverse lights))))
+      (pairs lights)))
 
-  [lights-as-decimal])
+  (def buttons-decimal
+    (map
+      |(reduce
+         (fn [acc i]
+           (bor acc (blshift 1 i)))
+         0 $)
+      buttons))
+
+  [lights-decimal buttons-decimal])
 
 (defn parse [input]
   (peg/match
     ~{:main (some (* :line (any "\n")))
 
-      :line (cmt :config ,parse-config)
+      :line (cmt :config ,translate-config)
       :config (* (group :lights) :s (group :buttons) :s (group :jolts))
 
       :lights (* "[" (some :light) "]")
@@ -37,21 +44,39 @@
     input))
 
 (test (parse test-input)
-      @[[6 [8 10 4 12 5]]
-        [2 [29 12 17 7 30]]
-        [29 [31 25 55 6]]])
+      @[[6 @[8 10 4 12 5 3]]
+        [8 @[29 12 17 7 30]]
+        [46 @[31 25 55 6]]])
 
-(defn fewest-presses [config]
-  0)
+(defn fewest-indicator-presses [[target buttons _] &opt n prev-combos]
+  (default n 1)
+  (default prev-combos @{0 :set})
 
-(test (fewest-presses (0 (parse test-input))) 2)
-(test (fewest-presses (1 (parse test-input))) 3)
-(test (fewest-presses (2 (parse test-input))) 2)
+  (def next-combos
+    (table/new (* (length prev-combos) (length buttons))))
+
+  (eachk prev prev-combos
+    (each button buttons
+      (put next-combos (bxor prev button) :set)))
+
+  (if (has-key? next-combos target)
+    n
+    (fewest-indicator-presses [target buttons] (inc n) next-combos)))
+
+(test (fewest-indicator-presses (0 (parse test-input))) 2)
+(test (fewest-indicator-presses (1 (parse test-input))) 3)
+(test (fewest-indicator-presses (2 (parse test-input))) 2)
 
 (defn solve-1 [input]
   (->>
     (parse input)
-    (map fewest-presses)
+    (map fewest-indicator-presses)
     sum))
 
 (test (solve-1 test-input) 7)
+
+(defn main [&]
+  (->>
+    (file/read stdin :all)
+    (|{:p1 (solve-1 $)})
+    (pp)))
