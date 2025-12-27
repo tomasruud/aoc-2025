@@ -128,8 +128,6 @@
                  _ (<= s target)]
         (put next-states s :set))))
 
-  (pp [target (length next-states)])
-
   (if (has-key? next-states target)
     n
     (fewest-joltage-presses [target buttons] (inc n) next-states)))
